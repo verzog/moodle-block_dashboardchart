@@ -147,8 +147,15 @@ class provider implements
             }
 
             // The block only stores its own configuration (heading and chart
-            // options); export it verbatim for the requesting user.
+            // options). Start from the generic context data, then add the
+            // user-provided configuration so it appears in the export.
+            $config = $block->config;
             $data = helper::get_context_data($context, $user);
+            $data->heading = $config->msg ?? '';
+            $data->graphtype = $config->graphtype ?? '';
+            $data->charttype = $config->dashboardcharttype ?? '';
+            $data->datalimit = $config->datalimit ?? '';
+
             helper::export_context_files($context, $user);
 
             writer::with_context($context)->export_data([], $data);

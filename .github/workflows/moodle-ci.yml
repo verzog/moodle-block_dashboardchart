@@ -27,7 +27,8 @@ jobs:
       mariadb:
         image: mariadb:10.11
         env:
-          MYSQL_USER: 'root'
+          # The image reserves MYSQL_USER for a non-root account; moodle-plugin-ci
+          # connects as root, enabled here via an empty password.
           MYSQL_ALLOW_EMPTY_PASSWORD: "true"
           MYSQL_CHARACTER_SET_SERVER: "utf8mb4"
           MYSQL_COLLATION_SERVER: "utf8mb4_unicode_ci"
