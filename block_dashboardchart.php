@@ -111,6 +111,8 @@ class block_dashboardchart extends block_base {
                 return $this->make_category_course_table($datalimit);
             } else if ($this->config->dashboardcharttype == 'login') {
                 return $this->make_login_table($datalimit);
+            } else if ($this->config->dashboardcharttype == 'loginusers') {
+                return $this->make_login_user_table();
             } else if ($this->config->dashboardcharttype == 'active_courses') {
                 return $this->make_most_active_courses_table($datalimit);
             }
@@ -245,6 +247,77 @@ class block_dashboardchart extends block_base {
             get_string('logins', 'block_dashboardchart'),
             get_string('date', 'block_dashboardchart')
         );
+    }
+
+    /**
+     * Show the two users with the most logins and the two with the fewest.
+     *
+     * Only users who have logged in at least once are considered. Login
+     * counts identify individuals, so this chart is offered to site admins
+     * only (see edit_form.php).
+     *
+     * @return string
+     */
+    public function make_login_user_table() {
+        $data = $this->get_login_user_data();
+
+        return $this->display_graph(
+            $data['series'],
+            $data['labels'],
+            get_string('loginusers', 'block_dashboardchart'),
+            get_string('username', 'block_dashboardchart')
+        );
+    }
+
+    /**
+     * Gather the two users with the most logins and the two with the fewest.
+     *
+     * Results are ordered highest first, so the chart reads from the most to
+     * the least active. Only users with at least one login appear.
+     *
+     * @return array Two parallel arrays keyed 'labels' (full names) and 'series' (login counts).
+     * @throws dml_exception
+     */
+    public function get_login_user_data() {
+        global $DB;
+
+        $countsql = "SELECT l.userid, COUNT(l.id) AS logins
+                       FROM {logstore_standard_log} l
+                      WHERE l.action = :action AND l.target = :target
+                   GROUP BY l.userid";
+        $params = ['action' => 'loggedin', 'target' => 'user'];
+
+        // Two users with the most logins, then two with the fewest. The
+        // secondary sort on userid keeps the result stable across databases.
+        $top = $DB->get_records_sql($countsql . ' ORDER BY COUNT(l.id) DESC, l.userid ASC', $params, 0, 2);
+        $bottom = $DB->get_records_sql($countsql . ' ORDER BY COUNT(l.id) ASC, l.userid ASC', $params, 0, 2);
+
+        // Present the highest first, then append the lowest users, skipping any
+        // already shown when the site has four or fewer users with logins.
+        $ordered = $top;
+        foreach (array_reverse($bottom, true) as $userid => $row) {
+            if (!isset($ordered[$userid])) {
+                $ordered[$userid] = $row;
+            }
+        }
+
+        $series = [];
+        $labels = [];
+        if (!empty($ordered)) {
+            // Load the display names in one query (see CLAUDE.md 5.1).
+            $namefields = \core_user\fields::for_name()->get_sql('', true)->selects;
+            $users = $DB->get_records_list('user', 'id', array_keys($ordered), '', 'id' . $namefields);
+
+            foreach ($ordered as $userid => $row) {
+                if (!isset($users[$userid])) {
+                    continue;
+                }
+                $series[] = (int) $row->logins;
+                $labels[] = fullname($users[$userid]);
+            }
+        }
+
+        return ['labels' => $labels, 'series' => $series];
     }
 
     /**

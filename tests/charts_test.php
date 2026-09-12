@@ -128,4 +128,73 @@ final class charts_test extends \advanced_testcase {
         $this->assertIsString($result);
         $this->assertNotEmpty($result);
     }
+
+    /**
+     * The login leaderboard shows the top two and bottom two users only.
+     *
+     * @return void
+     */
+    public function test_make_login_user_table(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $generator = $this->getDataGenerator();
+
+        // Give five users a distinct number of logins each.
+        $logins = [
+            'Zenithalpha' => 5,
+            'Yankeebravo' => 4,
+            'Middlecharlie' => 3,
+            'Deltadog' => 2,
+            'Echoedison' => 1,
+        ];
+        foreach ($logins as $firstname => $count) {
+            $user = $generator->create_user(['firstname' => $firstname, 'lastname' => 'Tester']);
+            $this->record_logins($user->id, $count);
+        }
+
+        $block = $this->make_block();
+        $data = $block->get_login_user_data();
+
+        // Highest first, then the lowest two; the middle user is excluded.
+        $this->assertSame([
+            'Zenithalpha Tester',
+            'Yankeebravo Tester',
+            'Deltadog Tester',
+            'Echoedison Tester',
+        ], $data['labels']);
+        $this->assertSame([5, 4, 2, 1], $data['series']);
+        $this->assertNotContains('Middlecharlie Tester', $data['labels']);
+
+        // The rendered chart is still a non-empty string.
+        $this->assertNotEmpty($block->make_login_user_table());
+    }
+
+    /**
+     * Record a number of login events for a user.
+     *
+     * @param int $userid The user who logged in.
+     * @param int $count How many login events to record.
+     * @return void
+     */
+    protected function record_logins(int $userid, int $count): void {
+        global $DB;
+        $row = (object) [
+            'eventname' => '\\core\\event\\user_loggedin',
+            'component' => 'core',
+            'action' => 'loggedin',
+            'target' => 'user',
+            'crud' => 'r',
+            'edulevel' => 0,
+            'contextid' => \context_system::instance()->id,
+            'contextlevel' => CONTEXT_SYSTEM,
+            'contextinstanceid' => 0,
+            'userid' => $userid,
+            'courseid' => 0,
+            'anonymous' => 0,
+            'timecreated' => time(),
+        ];
+        for ($i = 0; $i < $count; $i++) {
+            $DB->insert_record('logstore_standard_log', $row);
+        }
+    }
 }
