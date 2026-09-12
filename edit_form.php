@@ -1,5 +1,5 @@
 <?php
-// This file is part of Moodle - http://moodle.org/
+// This file is part of Moodle - https://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -12,37 +12,46 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Edit form class
+ * Edit form for the dashboardchart block.
  *
  * @package    block_dashboardchart
  * @copyright  2022 Brain Station 23 Ltd.
+ * @copyright  2026 Vernon Spain
  * @author     Brain Station 23 Ltd.
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class block_dashboardchart_edit_form extends block_edit_form {
 
+/**
+ * Block instance configuration form.
+ *
+ * @package    block_dashboardchart
+ * @copyright  2022 Brain Station 23 Ltd.
+ * @copyright  2026 Vernon Spain
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class block_dashboardchart_edit_form extends block_edit_form {
     /**
-     * Adds configuration fields in edit configuration for the block
-     * @param StdClass $mform moodle form stdClass objects
+     * Adds configuration fields to the block instance edit form.
+     *
+     * @param MoodleQuickForm $mform The form being built.
      * @return void
      */
     protected function specific_definition($mform) {
-        global $DB, $USER;
+        global $USER;
 
-        $this->page->requires->js_call_amd('block_dashboardchart/configure_block', 'init', array());
         // Section header title according to language file.
         $mform->addElement('header', 'config_header', get_string('blocksettings', 'block'));
 
-        // A sample string variable with a default value.
+        // A heading message with a default value.
         $mform->addElement('text', 'config_msg', get_string('blockstring', 'block_dashboardchart'));
         $mform->setDefault('config_msg', get_string('pluginname', 'block_dashboardchart'));
         $mform->setType('config_msg', PARAM_TEXT);
 
-        // Graph tyoe.
-        $graphposition = array();
+        // Graph type.
+        $graphposition = [];
         $graphposition['horizontal'] = get_string('horizontal', 'block_dashboardchart');
         $graphposition['vertical'] = get_string('vertical', 'block_dashboardchart');
         $graphposition['pie'] = get_string('pie', 'block_dashboardchart');
@@ -50,7 +59,7 @@ class block_dashboardchart_edit_form extends block_edit_form {
         $mform->addElement('select', 'config_graphtype', get_string('graphtype', 'block_dashboardchart'), $graphposition);
         $mform->setDefault('config_graphtype', 'vertical');
 
-        $dashboardcharttype = array();
+        $dashboardcharttype = [];
         $dashboardcharttype[""] = get_string('dashboardcharttype:select', 'block_dashboardchart');
         $dashboardcharttype["coursewiseenrollment"] = get_string('dashboardcharttype:coursewiseenrollment', 'block_dashboardchart');
         $dashboardcharttype["category"] = get_string('dashboardcharttype:category', 'block_dashboardchart');
@@ -63,22 +72,10 @@ class block_dashboardchart_edit_form extends block_edit_form {
             'select',
             'config_dashboardcharttype',
             get_string('dashboardcharttype', 'block_dashboardchart'),
-            $dashboardcharttype,
-            ['id' => 'id_config_dashboardcharttype']
+            $dashboardcharttype
         );
 
-        $coursesql = "SELECT * FROM {course} WHERE format != 'site'";
-        $coursedata = $DB->get_records_sql($coursesql);
-        $coursearray = array();
-        foreach ($coursedata as $row) {
-            $coursearray[$row->id] = $row->fullname;
-        }
-
-        $mform->addElement('html', '<div id="courseleaderboard_configs" style="display: none">');
-        $mform->addElement('select', 'config_courseid', get_string('config:courseselect', 'block_dashboardchart'), $coursearray);
-        $mform->addElement('html', '</div>');
-
-        $datalimitoptions = array();
+        $datalimitoptions = [];
         $datalimitoptions[""] = get_string('dashboardcharttype:select', 'block_dashboardchart');
         $datalimitoptions[5] = get_string('datalimitoption:top5', 'block_dashboardchart');
         $datalimitoptions[10] = get_string('datalimitoption:top10', 'block_dashboardchart');
@@ -92,6 +89,5 @@ class block_dashboardchart_edit_form extends block_edit_form {
             $datalimitoptions
         );
         $mform->setDefault('config_datalimit', 5);
-
     }
 }

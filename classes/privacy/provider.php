@@ -1,5 +1,5 @@
 <?php
-// This file is part of Moodle - http://moodle.org/
+// This file is part of Moodle - https://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -12,49 +12,48 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
-
-/**
- * Privacy Subsystem implementation for dashboardchart plugin.
- *
- * @package    block_dashboardchart
- * @copyright  2022 Brain Station 23 Ltd.
- * @license    http://www.gnu.org/copyleft/gpl.dashboardchart GNU GPL v3 or later
- */
-
-namespace block_dashboardchart\privacy;
-
-use \core_privacy\local\request\userlist;
-use \core_privacy\local\request\approved_contextlist;
-use \core_privacy\local\request\approved_userlist;
-use \core_privacy\local\request\writer;
-use \core_privacy\local\request\helper;
-use \core_privacy\local\request\deletion_criteria;
-use \core_privacy\local\metadata\collection;
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
  * Privacy Subsystem implementation for block_dashboardchart.
  *
+ * @package    block_dashboardchart
  * @copyright  2022 Brain Station 23 Ltd.
- * @license    http://www.gnu.org/copyleft/gpl.dashboardchart GNU GPL v3 or later
+ * @copyright  2026 Vernon Spain
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+namespace block_dashboardchart\privacy;
+
+use core_privacy\local\request\userlist;
+use core_privacy\local\request\approved_contextlist;
+use core_privacy\local\request\approved_userlist;
+use core_privacy\local\request\writer;
+use core_privacy\local\request\helper;
+use core_privacy\local\metadata\collection;
+
+/**
+ * Privacy Subsystem implementation for block_dashboardchart.
+ *
+ * @package    block_dashboardchart
+ * @copyright  2022 Brain Station 23 Ltd.
+ * @copyright  2026 Vernon Spain
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class provider implements
-        // The block_dashboardchart block stores user provided data.
-        \core_privacy\local\metadata\provider,
-
-        // This plugin is capable of determining which users have data within it.
-        \core_privacy\local\request\core_userlist_provider,
-
-        // The block_dashboardchart block provides data directly to core.
-        \core_privacy\local\request\plugin\provider {
-
+    // This block stores configuration provided by the user.
+    \core_privacy\local\metadata\provider,
+    // This plugin is capable of determining which users have data within it.
+    \core_privacy\local\request\core_userlist_provider,
+    // This block provides data directly to core.
+    \core_privacy\local\request\plugin\provider {
     /**
      * Returns information about how block_dashboardchart stores its data.
      *
      * @param   collection     $collection The initialised collection to add items to.
      * @return  collection     A listing of user data stored through this system.
      */
-    public static function get_metadata(collection $collection) : collection {
+    public static function get_metadata(collection $collection): collection {
         $collection->link_subsystem('block', 'privacy:metadata:block');
 
         return $collection;
@@ -64,19 +63,20 @@ class provider implements
      * Get the list of contexts that contain user information for the specified user.
      *
      * @param int  $userid The user to search.
-     * @return contextlist $contextlist  The contextlist containing the list of contexts used in this plugin.
+     * @return \core_privacy\local\request\contextlist The contextlist containing the contexts used in this plugin.
      */
-    public static function get_contexts_for_userid(int $userid) : \core_privacy\local\request\contextlist {
+    public static function get_contexts_for_userid(int $userid): \core_privacy\local\request\contextlist {
         // This block doesn't know who information is stored against unless it
         // is at the user context.
         $contextlist = new \core_privacy\local\request\contextlist();
 
         $sql = "SELECT c.id
-                FROM {block_instances} b
-                INNER JOIN {context} c ON c.instanceid = b.id AND c.contextlevel = :contextblock
-                INNER JOIN {context} bpc ON bpc.id = b.parentcontextid
-                WHERE b.blockname = 'dashboardchart' AND bpc.contextlevel = :contextuser
-                AND bpc.instanceid = :userid";
+                  FROM {block_instances} b
+                  JOIN {context} c ON c.instanceid = b.id AND c.contextlevel = :contextblock
+                  JOIN {context} bpc ON bpc.id = b.parentcontextid
+                 WHERE b.blockname = 'dashboardchart'
+                   AND bpc.contextlevel = :contextuser
+                   AND bpc.instanceid = :userid";
 
         $params = [
             'contextblock' => CONTEXT_BLOCK,
@@ -92,7 +92,7 @@ class provider implements
     /**
      * Get the list of users who have data within a context.
      *
-     * @param userlist $userlist The userlist containing the list of users who have data in this context/plugin combination.
+     * @param userlist $userlist The userlist containing the list of users who have data in this context/plugin.
      */
     public static function get_users_in_context(userlist $userlist) {
         // This block doesn't know who information is stored against unless it
@@ -104,14 +104,15 @@ class provider implements
         }
 
         $sql = "SELECT bpc.instanceid AS userid
-                FROM {block_instances} bi
-                JOIN {context} bpc ON bpc.id = bi.parentcontextid
-                WHERE bi.blockname = 'dashboardchart' AND bpc.contextlevel = :contextuser
-                AND bi.id = :blockinstanceid";
+                  FROM {block_instances} bi
+                  JOIN {context} bpc ON bpc.id = bi.parentcontextid
+                 WHERE bi.blockname = 'dashboardchart'
+                   AND bpc.contextlevel = :contextuser
+                   AND bi.id = :blockinstanceid";
 
         $params = [
             'contextuser' => CONTEXT_USER,
-            'blockinstanceid' => $context->instanceid
+            'blockinstanceid' => $context->instanceid,
         ];
 
         $userlist->add_from_sql('userid', $sql, $params);
@@ -127,44 +128,35 @@ class provider implements
 
         $user = $contextlist->get_user();
 
-        list($contextsql, $contextparams) = $DB->get_in_or_equal($contextlist->get_contextids(), SQL_PARAMS_NAMED);
+        [$contextsql, $contextparams] = $DB->get_in_or_equal($contextlist->get_contextids(), SQL_PARAMS_NAMED);
 
         $sql = "SELECT c.id AS contextid, bi.*
-                FROM {context} c
-                INNER JOIN {block_instances} bi ON bi.id = c.instanceid AND c.contextlevel = :contextlevel
-                WHERE bi.blockname = 'dashboardchart' AND(c.id {$contextsql})";
+                  FROM {context} c
+                  JOIN {block_instances} bi ON bi.id = c.instanceid AND c.contextlevel = :contextlevel
+                 WHERE bi.blockname = 'dashboardchart' AND c.id {$contextsql}";
 
-        $params = [
-            'contextlevel' => CONTEXT_BLOCK,
-        ];
-        $params += $contextparams;
+        $params = ['contextlevel' => CONTEXT_BLOCK] + $contextparams;
 
         $instances = $DB->get_recordset_sql($sql, $params);
         foreach ($instances as $instance) {
             $context = \context_block::instance($instance->id);
             $block = block_instance('dashboardchart', $instance);
             if (empty($block->config)) {
-                // Skip this block. It has not been configured.
+                // Skip this block as it has not been configured.
                 continue;
             }
 
-            $dashboardchart = writer::with_context($context)
-                ->rewrite_pluginfile_urls([], 'block_dashboardchart', 'content', null, $block->config->text);
-
-            // Default to FORMAT_dashboardchart which is what will have been used before the
-            // editor was properly implemented for the block.
-            $format = isset($block->config->format) ? $block->config->format : FORMAT_dashboardchart;
-
-            $filteropt = (object) [
-                'overflowdiv' => true,
-                'noclean' => true,
-            ];
-            $dashboardchart = format_text($dashboardchart, $format, $filteropt);
-
+            // The block only stores its own configuration (heading and chart
+            // options). Start from the generic context data, then add the
+            // user-provided configuration so it appears in the export.
+            $config = $block->config;
             $data = helper::get_context_data($context, $user);
+            $data->heading = $config->msg ?? '';
+            $data->graphtype = $config->graphtype ?? '';
+            $data->charttype = $config->dashboardcharttype ?? '';
+            $data->datalimit = $config->datalimit ?? '';
+
             helper::export_context_files($context, $user);
-            $data->title = $block->config->title;
-            $data->content = $dashboardchart;
 
             writer::with_context($context)->export_data([], $data);
         }
@@ -174,8 +166,7 @@ class provider implements
     /**
      * Delete all data for all users in the specified context.
      *
-     * @param context $context
-     *
+     * @param \context $context
      */
     public static function delete_data_for_all_users_in_context(\context $context) {
 
@@ -210,7 +201,6 @@ class provider implements
     public static function delete_data_for_user(approved_contextlist $contextlist) {
         // The only way to delete data for the dashboardchart block is to delete the block instance itself.
         foreach ($contextlist as $context) {
-
             if (!$context instanceof \context_block) {
                 continue;
             }
@@ -223,7 +213,7 @@ class provider implements
     /**
      * Get the block instance record for the specified context.
      *
-     * @param \context_block $context The context to fetch
+     * @param \context_block $context The context to fetch.
      * @return \stdClass
      */
     protected static function get_instance_from_context(\context_block $context) {

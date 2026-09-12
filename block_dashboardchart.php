@@ -1,5 +1,5 @@
 <?php
-// This file is part of Moodle - http://moodle.org/
+// This file is part of Moodle - https://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -12,20 +12,29 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Form for editing HTML block instances.
+ * Block class for the dashboardchart block.
  *
  * @package    block_dashboardchart
  * @copyright  2022 Brain Station 23 Ltd.
+ * @copyright  2026 Vernon Spain
  * @author     Brain Station 23 Ltd.
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class block_dashboardchart extends block_base {
 
+/**
+ * Dashboard chart block.
+ *
+ * @package    block_dashboardchart
+ * @copyright  2022 Brain Station 23 Ltd.
+ * @copyright  2026 Vernon Spain
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class block_dashboardchart extends block_base {
     /**
-     * Allow the block to have a configuration page
+     * Allow the block to have a configuration page.
      *
      * @return boolean
      */
@@ -33,9 +42,9 @@ class block_dashboardchart extends block_base {
         return true;
     }
 
-
     /**
-     * init function for plugin name
+     * Init function for the plugin name.
+     *
      * @return void
      * @throws coding_exception
      */
@@ -44,14 +53,17 @@ class block_dashboardchart extends block_base {
     }
 
     /**
-     * get content function
-     * @return stdClass|stdObject|null
+     * Get content function.
+     *
+     * @return stdClass|null
      */
     public function get_content() {
         if ($this->content !== null) {
             return $this->content;
-        } else {
-            isset($this->config->dashboardcharttype) ? $this->title = $this->config->msg : '';
+        }
+
+        if (isset($this->config->dashboardcharttype) && !empty($this->config->msg)) {
+            $this->title = $this->config->msg;
         }
 
         $this->content = new stdClass();
@@ -76,7 +88,7 @@ class block_dashboardchart extends block_base {
     }
 
     /**
-     * Allow the block to have a multiple instance.
+     * Allow the block to have multiple instances.
      *
      * @return bool
      */
@@ -85,7 +97,7 @@ class block_dashboardchart extends block_base {
     }
 
     /**
-     * Make custom content for block_dashboardchart block.
+     * Make custom content for the block.
      *
      * @return string
      */
@@ -93,70 +105,79 @@ class block_dashboardchart extends block_base {
         $datalimit = $this->config->datalimit ?? 5;
 
         if (isset($this->config->dashboardcharttype)) {
-            $dashboardtype = '';
             if ($this->config->dashboardcharttype == 'coursewiseenrollment') {
-                $dashboardtype = $this->make_course_student_table($datalimit);
+                return $this->make_course_student_table($datalimit);
             } else if ($this->config->dashboardcharttype == 'category') {
-                $dashboardtype = $this->make_category_course_table($datalimit);
+                return $this->make_category_course_table($datalimit);
             } else if ($this->config->dashboardcharttype == 'login') {
-                $dashboardtype = $this->make_login_table($datalimit);
+                return $this->make_login_table($datalimit);
             } else if ($this->config->dashboardcharttype == 'active_courses') {
-                $dashboardtype = $this->make_most_active_courses_table($datalimit);
-            } else {
-                $dashboardtype = $this->make_enrollment_table($datalimit);
+                return $this->make_most_active_courses_table($datalimit);
             }
-            return $dashboardtype;
-        } else {
-            return $this->make_enrollment_table($datalimit);
         }
+
+        return $this->make_enrollment_table($datalimit);
     }
 
     /**
-     * Make  table for enrollment leaderboard.
+     * Make the enrolment leaderboard by country.
+     *
      * @param int $datalimit
      * @return string
      */
     public function make_enrollment_table($datalimit) {
         global $DB;
-        $sql = "SELECT country, COUNT(country) as newusers
-                FROM {user} where country <>''
-                GROUP BY country ORDER BY count(country) desc";
+        $sql = "SELECT country, COUNT(country) AS newusers
+                  FROM {user}
+                 WHERE country <> ''
+              GROUP BY country
+              ORDER BY COUNT(country) DESC";
 
         $rows = $DB->get_records_sql($sql, null, 0, $datalimit);
         $series = [];
         $labels = [];
         foreach ($rows as $row) {
-            if (empty($row->country) || $row->country == '') {
+            if (empty($row->country)) {
                 continue;
             }
             $series[] = $row->newusers;
             $labels[] = get_string($row->country, 'countries');
         }
 
-        return $this->display_graph($series, $labels,
+        return $this->display_graph(
+            $series,
+            $labels,
             get_string('country_title', 'block_dashboardchart'),
-            get_string('country_desc', 'block_dashboardchart'));
+            get_string('country_desc', 'block_dashboardchart')
+        );
     }
 
     /**
-     * Getting course records from the database
+     * Get the most active courses by log activity.
+     *
      * @param int $datalimit
-     * @return mixed
+     * @return string
      * @throws dml_exception
      */
     public function make_most_active_courses_table($datalimit) {
         global $DB;
-        $sql = 'SELECT c.shortname, count(l.userid) AS views
-                FROM {logstore_standard_log} l, {user} u,
-			         {role_assignments} r, {course} c, {context} ct
-                WHERE  l.userid = u.id AND r.roleid=5
-                    AND r.userid = u.id AND c.id = l.courseid
-                    AND ct.contextlevel=50 AND l.courseid=ct.instanceid
-                    AND c.id != 1
-                GROUP BY c.shortname
-                ORDER BY count(l.userid) desc';
 
-        $records = $DB->get_records_sql($sql, null, 0, $datalimit);
+        $params = [
+            'studentrole' => 5,
+            'coursecontext' => CONTEXT_COURSE,
+            'siteid' => SITEID,
+        ];
+        $sql = "SELECT c.shortname, COUNT(l.userid) AS views
+                  FROM {logstore_standard_log} l
+                  JOIN {user} u ON l.userid = u.id
+                  JOIN {role_assignments} r ON r.userid = u.id AND r.roleid = :studentrole
+                  JOIN {course} c ON c.id = l.courseid
+                  JOIN {context} ct ON ct.contextlevel = :coursecontext AND ct.instanceid = l.courseid
+                 WHERE c.id <> :siteid
+              GROUP BY c.shortname
+              ORDER BY COUNT(l.userid) DESC";
+
+        $records = $DB->get_records_sql($sql, $params, 0, $datalimit);
 
         $series = [];
         $labels = [];
@@ -166,50 +187,79 @@ class block_dashboardchart extends block_base {
             $labels[] = $data->shortname;
         }
 
-        return $this->display_graph($series, $labels,
+        return $this->display_graph(
+            $series,
+            $labels,
             get_string('mostactive', 'block_dashboardchart'),
-            get_string('mostactive_desc', 'block_dashboardchart'));
+            get_string('mostactive_desc', 'block_dashboardchart')
+        );
     }
 
     /**
-     * Login Table function
+     * Distinct active users per day for the most recent days.
+     *
      * @param int $datalimit
-     * @return mixed
+     * @return string
      * @throws dml_exception
      */
     public function make_login_table($datalimit) {
         global $DB;
-        $sql = 'SELECT date(from_unixtime(lg.timecreated)) date, count(distinct lg.userid) logins
-                FROM {logstore_standard_log} lg
-                GROUP BY date(from_unixtime(lg.timecreated))
-                ORDER BY date(from_unixtime(lg.timecreated)) desc';
 
-        $records = $DB->get_records_sql($sql, null, 0, $datalimit);
+        // Count the distinct users active on each of the most recent local
+        // days. The day boundaries are derived with calendar maths
+        // (usergetmidnight) rather than by adding DAYSECS, so the buckets stay
+        // correct across daylight saving changes, and the query uses only a
+        // portable integer range so it runs on both MySQL and PostgreSQL.
+        $numdays = ($datalimit > 1) ? (int) $datalimit : 30;
 
         $series = [];
         $labels = [];
 
-        foreach ($records as $data) {
-            $series[] = $data->logins;
-            $labels[] = $data->date;
+        $sql = "SELECT COUNT(DISTINCT userid)
+                  FROM {logstore_standard_log}
+                 WHERE timecreated >= :dayfrom AND timecreated < :dayto";
+
+        $probe = time();
+        for ($i = 0; $i < $numdays; $i++) {
+            $daystart = usergetmidnight($probe);
+            // Probe a time safely inside the next calendar day, then snap to
+            // its local midnight so the day end is daylight-saving correct.
+            $dayend = usergetmidnight($daystart + DAYSECS + (2 * HOURSECS));
+
+            $logins = $DB->get_field_sql($sql, ['dayfrom' => $daystart, 'dayto' => $dayend]);
+
+            $series[] = (int) $logins;
+            $labels[] = userdate($daystart, get_string('strftimedaydate', 'langconfig'));
+
+            // Step to the previous day; one second before midnight lands in it.
+            $probe = $daystart - 1;
         }
 
-        return $this->display_graph($series, $labels,
+        // Present the oldest day first so the chart reads left to right.
+        $series = array_reverse($series);
+        $labels = array_reverse($labels);
+
+        return $this->display_graph(
+            $series,
+            $labels,
             get_string('logins', 'block_dashboardchart'),
-            get_string('date', 'block_dashboardchart'));
+            get_string('date', 'block_dashboardchart')
+        );
     }
 
     /**
-     * Getting category wise course table
+     * Get the number of courses in each category.
+     *
      * @param int $datalimit
-     * @return mixed
+     * @return string
      * @throws dml_exception
      */
     public function make_category_course_table($datalimit) {
         global $DB;
 
-        $sql = 'SELECT {course_categories}.name, {course_categories}.coursecount
-                FROM {course_categories}';
+        $sql = "SELECT name, coursecount
+                  FROM {course_categories}
+              ORDER BY coursecount DESC";
 
         $records = $DB->get_records_sql($sql, null, 0, $datalimit);
 
@@ -221,29 +271,33 @@ class block_dashboardchart extends block_base {
             $labels[] = $data->name;
         }
 
-        return $this->display_graph($series, $labels,
+        return $this->display_graph(
+            $series,
+            $labels,
             get_string('courseno', 'block_dashboardchart'),
-            get_string('categoryname', 'block_dashboardchart'));
+            get_string('categoryname', 'block_dashboardchart')
+        );
     }
 
     /**
-     * Getting data about course and users
+     * Get the number of students enrolled in each course.
+     *
      * @param int $datalimit
-     * @return mixed
+     * @return string
      * @throws dml_exception
      */
     public function make_course_student_table($datalimit) {
         global $DB;
 
-        $sql = "SELECT c.fullname 'course', COUNT(u.username) 'users'
-                FROM {role_assignments} r
-                JOIN {user} u on r.userid = u.id
-                JOIN {role} rn on r.roleid = rn.id
-                JOIN {context} ctx on r.contextid = ctx.id
-                JOIN {course} c on ctx.instanceid = c.id
-                WHERE rn.shortname = 'student'
-                GROUP BY c.fullname, rn.shortname
-                ORDER BY COUNT(u.username) desc";
+        $sql = "SELECT c.fullname AS coursename, COUNT(u.username) AS studentcount
+                  FROM {role_assignments} r
+                  JOIN {user} u ON r.userid = u.id
+                  JOIN {role} rn ON r.roleid = rn.id
+                  JOIN {context} ctx ON r.contextid = ctx.id
+                  JOIN {course} c ON ctx.instanceid = c.id
+                 WHERE rn.shortname = 'student'
+              GROUP BY c.fullname, rn.shortname
+              ORDER BY COUNT(u.username) DESC";
 
         $records = $DB->get_records_sql($sql, null, 0, $datalimit);
 
@@ -251,22 +305,26 @@ class block_dashboardchart extends block_base {
         $labels = [];
 
         foreach ($records as $data) {
-            $series[] = $data->users;
-            $labels[] = $data->course;
+            $series[] = $data->studentcount;
+            $labels[] = $data->coursename;
         }
 
-        return $this->display_graph($series, $labels,
+        return $this->display_graph(
+            $series,
+            $labels,
             get_string('studentpercourse', 'block_dashboardchart'),
-            get_string('mostactive_desc', 'block_dashboardchart'));
+            get_string('mostactive_desc', 'block_dashboardchart')
+        );
     }
 
     /**
      * Display graph.
-     * @param  float[] $seriesvalue
-     * @param string $labels
+     *
+     * @param float[] $seriesvalue
+     * @param array $labels
      * @param string $title
      * @param string $labelx
-     * @return mixed
+     * @return string
      */
     public function display_graph($seriesvalue, $labels, $title, $labelx) {
         global $OUTPUT, $CFG;
@@ -276,11 +334,7 @@ class block_dashboardchart extends block_base {
         $chart = new \core\chart_bar();
         $series = new \core\chart_series($title, $seriesvalue);
 
-        if ($config->barcolor == '') {
-            $chartcolour  = '#2385E5';
-        } else {
-            $chartcolour = $config->barcolor;
-        }
+        $chartcolour = empty($config->barcolor) ? '#2385E5' : $config->barcolor;
 
         if (isset($this->config->graphtype)) {
             if ($this->config->graphtype == 'horizontal') {

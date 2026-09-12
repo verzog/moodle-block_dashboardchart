@@ -1,5 +1,5 @@
 <?php
-// This file is part of Moodle - http://moodle.org/
+// This file is part of Moodle - https://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -12,21 +12,22 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Version details
+ * Version details.
  *
  * @package    block_dashboardchart
  * @copyright  2022 Brain Station 23 Ltd.
+ * @copyright  2026 Vernon Spain
  * @author     Brain Station 23 Ltd.
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version = 2023010500;        // The current plugin version (Date: YYYYMMDDXX).
-$plugin->requires = 2020061509;        // Requires this Moodle version.
-$plugin->release = '1.0.1';
+$plugin->version = 2026091200;        // The current plugin version (Date: YYYYMMDDXX).
+$plugin->requires = 2025041400;       // Requires Moodle 5.0 or later.
+$plugin->release = '1.1.0';
 $plugin->component = 'block_dashboardchart';      // Full name of the plugin (used for diagnostics).
 $plugin->maturity = MATURITY_STABLE;

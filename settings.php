@@ -1,5 +1,5 @@
 <?php
-// This file is part of Moodle - http://moodle.org/
+// This file is part of Moodle - https://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -12,24 +12,27 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Settings for the dashboardchart block
+ * Settings for the dashboardchart block.
  *
  * @package    block_dashboardchart
  * @copyright  2022 Brain Station 23 Ltd.
+ * @copyright  2026 Vernon Spain
  * @author     Brain Station 23 Ltd.
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die;
+defined('MOODLE_INTERNAL') || die();
 
 if ($ADMIN->fulltree) {
     // Presentation options heading.
-    $settings->add(new admin_setting_heading('block_dashboardchart/appearance',
+    $settings->add(new admin_setting_heading(
+        'block_dashboardchart/appearance',
         get_string('appearance', 'admin'),
-        ''));
+        ''
+    ));
 
     $name = 'block_dashboardchart/barcolor';
     $title = get_string('color', 'block_dashboardchart');

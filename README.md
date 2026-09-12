@@ -1,11 +1,11 @@
 # Custom Block Dashboard Chart
 
-Dashboard Chart plugin is a block plugin in moodle. This Plugin helps to generate different types of charts such as 
+Dashboard Chart is a block plugin for Moodle. It generates different types of charts — pie chart, line chart, horizontal bar, and vertical bar. You can choose the chart value and select a data limit to customise the chart accordingly. The value of the chart is displayed based on the data limit that has been set.
 
+# Requirements
 
-e chart, line chart, horizontal bar, vertical bar. User can choose the chart value and select data limit to customize their charts accordingly. The value of the chart will be displayed based on the data limit that has been set.
-
-The custom styling is not functional yet. It will be updated shortly.
+- Moodle 5.0 or later
+- PHP 8.2 or later
 
 # Leaderboard Types
 
