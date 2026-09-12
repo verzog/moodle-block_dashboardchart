@@ -259,6 +259,13 @@ class block_dashboardchart extends block_base {
      * @return string
      */
     public function make_login_user_table() {
+        // Configuring the option is restricted to admins, but the block also
+        // renders for everyone who views the page it sits on, so re-check here:
+        // per-user login counts must never be exposed to non-admin viewers.
+        if (!is_siteadmin()) {
+            return '';
+        }
+
         $data = $this->get_login_user_data();
 
         return $this->display_graph(
@@ -281,16 +288,33 @@ class block_dashboardchart extends block_base {
     public function get_login_user_data() {
         global $DB;
 
+        // Aggregating the whole log is expensive, so cache the result for a
+        // short time; a login leaderboard need not be accurate to the second.
+        $cache = \cache::make_from_params(
+            \cache_store::MODE_APPLICATION,
+            'block_dashboardchart',
+            'loginusers',
+            [],
+            ['ttl' => 300]
+        );
+        $cached = $cache->get('topbottom');
+        if (is_array($cached)) {
+            return $cached;
+        }
+
+        // Match the core login event by its exact class name so that unrelated
+        // plugin events sharing the 'loggedin' action cannot inflate counts.
         $countsql = "SELECT l.userid, COUNT(l.id) AS logins
                        FROM {logstore_standard_log} l
-                      WHERE l.action = :action AND l.target = :target
+                      WHERE l.eventname = :eventname
                    GROUP BY l.userid";
-        $params = ['action' => 'loggedin', 'target' => 'user'];
+        $params = ['eventname' => '\\core\\event\\user_loggedin'];
 
-        // Two users with the most logins, then two with the fewest. The
-        // secondary sort on userid keeps the result stable across databases.
+        // Two users with the most logins and two with the fewest. The ends use
+        // opposite userid tie-breakers so they still pick distinct users when
+        // every login count is equal; both are deterministic across databases.
         $top = $DB->get_records_sql($countsql . ' ORDER BY COUNT(l.id) DESC, l.userid ASC', $params, 0, 2);
-        $bottom = $DB->get_records_sql($countsql . ' ORDER BY COUNT(l.id) ASC, l.userid ASC', $params, 0, 2);
+        $bottom = $DB->get_records_sql($countsql . ' ORDER BY COUNT(l.id) ASC, l.userid DESC', $params, 0, 2);
 
         // Present the highest first, then append the lowest users, skipping any
         // already shown when the site has four or fewer users with logins.
@@ -317,7 +341,10 @@ class block_dashboardchart extends block_base {
             }
         }
 
-        return ['labels' => $labels, 'series' => $series];
+        $result = ['labels' => $labels, 'series' => $series];
+        $cache->set('topbottom', $result);
+
+        return $result;
     }
 
     /**

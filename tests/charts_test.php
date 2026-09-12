@@ -170,6 +170,41 @@ final class charts_test extends \advanced_testcase {
     }
 
     /**
+     * Non-admin viewers never see the per-user login leaderboard.
+     *
+     * @return void
+     */
+    public function test_make_login_user_table_requires_admin(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->record_logins($user->id, 3);
+        $this->setUser($user);
+
+        $this->assertSame('', $this->make_block()->make_login_user_table());
+    }
+
+    /**
+     * Tied login counts still yield four distinct users.
+     *
+     * @return void
+     */
+    public function test_make_login_user_table_handles_ties(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $generator = $this->getDataGenerator();
+        for ($i = 0; $i < 5; $i++) {
+            $user = $generator->create_user();
+            $this->record_logins($user->id, 1);
+        }
+
+        $data = $this->make_block()->get_login_user_data();
+
+        $this->assertCount(4, $data['labels']);
+        $this->assertCount(4, array_unique($data['labels']));
+        $this->assertSame([1, 1, 1, 1], $data['series']);
+    }
+
+    /**
      * Record a number of login events for a user.
      *
      * @param int $userid The user who logged in.
