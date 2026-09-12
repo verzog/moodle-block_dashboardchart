@@ -24,6 +24,8 @@
 
 namespace block_dashboardchart;
 
+use PHPUnit\Framework\Attributes\CoversClass;
+
 /**
  * Verify each chart builder executes on every supported database.
  *
@@ -34,8 +36,8 @@ namespace block_dashboardchart;
  * @package    block_dashboardchart
  * @copyright  2026 Vernon Spain
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \block_dashboardchart
  */
+#[CoversClass(\block_dashboardchart::class)]
 final class charts_test extends \advanced_testcase {
     /**
      * Instantiate the block so its chart builders can be called.
