@@ -66,6 +66,7 @@ class block_dashboardchart_edit_form extends block_edit_form {
         $dashboardcharttype["active_courses"] = get_string('dashboardcharttype:active_courses', 'block_dashboardchart');
         if (is_siteadmin($USER->id)) {
             $dashboardcharttype["login"] = get_string('dashboardcharttype:login', 'block_dashboardchart');
+            $dashboardcharttype["loginusers"] = get_string('dashboardcharttype:loginusers', 'block_dashboardchart');
             $dashboardcharttype["enrollmentbyCountry"] = get_string('dashboardcharttype:enrollment', 'block_dashboardchart');
         }
         $mform->addElement(

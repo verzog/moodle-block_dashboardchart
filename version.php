@@ -26,8 +26,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version = 2026091200;        // The current plugin version (Date: YYYYMMDDXX).
+$plugin->version = 2026091202;        // The current plugin version (Date: YYYYMMDDXX).
 $plugin->requires = 2025041400;       // Requires Moodle 5.0 or later.
-$plugin->release = '1.1.0';
+$plugin->release = '1.2.0';
 $plugin->component = 'block_dashboardchart';      // Full name of the plugin (used for diagnostics).
 $plugin->maturity = MATURITY_STABLE;
